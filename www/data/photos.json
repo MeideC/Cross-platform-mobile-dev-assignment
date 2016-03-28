@@ -1,0 +1,44 @@
+[
+  {
+    "date": "05/08/2000",
+    "carrier": "Elisa",
+    "id": "motorola",
+    "thumbnail_url": "img/motorola.jpg",
+    "title": "Motorola\u2122 Rarz"
+  },
+  {
+    "date": "05/06/1767",
+    "carrier": "DNA",
+    "id": "nexus",
+    "thumbnail_url": "img/nexus6.png",
+    "title": "Google Nexus\u2122 6"
+  },
+  {
+    "date": "08/01/2020",
+    "carrier": "AT&T",
+    "id": "iPhone",
+    "thumbnail_url": "img/iphone.jpg",
+    "title": "Apple iPhone\u2122 SE"
+  },
+  {
+    "date": "05/01/1999",
+    "carrier": "Vodafone",
+    "id": "Nokia",
+    "thumbnail_url": "img/nokia.jpg",
+    "title": "Nokia\u2122 forever!"
+  },
+  {
+    "date": "20/01/1996",
+    "carrier": "AT&T",
+    "id": "Samsung",
+    "thumbnail_url": "img/samsung.jpg",
+    "title": "Samsung\u2122 Galaxy s7"
+  },
+  {
+    "date": "05/08/1867",
+    "carrier": "Tele",
+    "id": "Dell",
+    "thumbnail_url": "img/dell.jpeg",
+    "title": "Dell\u2122 Venue"
+  }
+]
