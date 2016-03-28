@@ -27,11 +27,16 @@
       <ion-header-bar class="bar-stable">
         <h1 class="title">PhotoApp</h1>
       </ion-header-bar>
-      <ion-content>
-        <h4 class="text-center padding-top">
-          Welcome to the Cross-Platform Mobile Development course!
-        </h4>
+
+      <ion-content class="has-header" ng-controller="PhotosCtrl">
+        <ion-list>
+          <ion-item class="item item-thumbnail-left" ng-repeat="photo in photos" href="#">
+            <img ng-src="{{ photo.thumbnail_url }}">
+            <h2>{{ photo.title }}</h2>
+          </ion-item>
+        </ion-list>
       </ion-content>
+
     </ion-pane>
   </body>
 </html>
