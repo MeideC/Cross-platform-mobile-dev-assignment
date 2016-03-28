@@ -30,6 +30,11 @@ angular.module('photoApp', ['ionic'])
     url: '/',
     templateUrl: 'templates/photos.html',
     controller: 'PhotosCtrl'
+  })
+  .state('photo', {
+    url: '/photo/:photoid',
+    templateUrl: 'templates/photo.html',
+    controller: 'PhotoCtrl'
   });
 })
 
@@ -38,3 +43,10 @@ angular.module('photoApp', ['ionic'])
     $scope.photos = data;
   });
 })
+
+.controller('PhotoCtrl', function($scope, $http, $filter, $stateParams) {
+  var photoid = $stateParams.photoid;
+  $http.get('data/photos.json').success(function (data) {
+    $scope.photo = $filter('filter')(data, { id: photoid })[0];
+  });
+});

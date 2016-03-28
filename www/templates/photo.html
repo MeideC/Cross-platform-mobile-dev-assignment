@@ -1,0 +1,17 @@
+<ion-view title="{{ photo.title }}">
+    <ion-content class="has-header">
+      <div class="list card">
+
+        <div class="item">
+          <h2>{{ photoid.title }}</h2>
+          <p>Date: {{ photo.date | date:'dd MMMM yyyy' }}</p>
+          <p>Carrier: {{ photo.carrier }}</p>
+        </div>
+
+        <div class="item item-image">
+          <img src="{{ photo.thumbnail_url }}">
+        </div>
+
+      </div>
+    </ion-content>
+</ion-view>

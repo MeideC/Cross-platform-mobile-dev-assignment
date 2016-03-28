@@ -1,7 +1,7 @@
 <ion-view title="Photo Library">
   <ion-content class="has-header">
     <ion-list>
-      <ion-item class="item item-thumbnail-left" ng-repeat="photo in photos" href="#">
+      <ion-item class="item item-thumbnail-left" ng-repeat="photo in photos" ui-sref="photo({ photoid: photo.id })">
         <img ng-src="{{ photo.thumbnail_url }}">
         <h2>{{ photo.title }}</h2>
       </ion-item>
