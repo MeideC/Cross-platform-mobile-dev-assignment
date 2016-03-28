@@ -23,6 +23,16 @@ angular.module('photoApp', ['ionic'])
   });
 })
 
+.config(function($stateProvider, $urlRouterProvider) {
+  $urlRouterProvider.otherwise('/');
+
+  $stateProvider.state('photos', {
+    url: '/',
+    templateUrl: 'templates/photos.html',
+    controller: 'PhotosCtrl'
+  });
+})
+
 .controller('PhotosCtrl', function ($scope, $http) {
   $http.get('data/photos.json').success(function (data) {
     $scope.photos = data;
