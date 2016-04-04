@@ -50,6 +50,20 @@ angular.module('photoApp.services', [])
     },
 
     // Updates the internal photos promise to resolve to different array of photos
+    // (the new array will contain one more photo).
+    // This method does not return anything.
+    addPhoto: function(newPhoto) {
+      // notice that the return value is a result of .then(), i.e. it is also a promise
+      photosPromise = photosPromise.then(function onFulfilled(photos) {
+        // This code executes asynchronously after .addPhoto() returns.
+        // It defines how the promise returned by .addPhoto() will be resolved.
+        // Note: inside this function 'photos' is the actual array of photos
+        photos.push(newPhoto);
+        return photos;
+      });
+    },
+
+    // Updates the internal photos promise to resolve to different array of photos
     // (the new array will contain one less photo).
     // This method does not return anything.
     deletePhoto: function(photoId) {

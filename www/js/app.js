@@ -49,9 +49,40 @@ angular.module('photoApp', ['ionic', 'photoApp.services'])
     // That's why it's necessary to subscribe to the '$ionicView.beforeEnter'
     // event and refresh the list manually.
     PhotoLibraryService.getPhotos().then(function(photos) {
-      $scope.photos = photos;
+      // keep a copy of the array (to be able to modify it as needed
+      // without affecting others)
+      $scope.photos = photos.slice(0);
     });
   });
+
+  $scope.takePhoto = function() {
+    // for now always upload the same photo from a local file
+    // we'll add photos from the actual camera later
+    uploadNewPhoto('img/ionic.png');
+  };
+
+  function uploadNewPhoto(url) {
+    var date = new Date(); // now
+
+    // do some formatting to make an OK default name for the new photo
+    // 2011-10-05T14:48:00.000Z -> 2011.10.05 at 14.48.00
+    var title = date.toISOString();
+    title = title.slice(0, 10).replace(/\-/g, ".") + ' at '
+      + title.slice(11, 19).replace(/:/g, ".");
+
+    var photo = {
+      id: date.getTime().toString(), // time with milliseconds should be unique enough
+      title: title,
+      date: date,
+      thumbnail_url: url
+    };
+
+    // Adding the new photo object to the $scope makes it immediately visible
+    // on the screen. Calling the PhotoLibraryService.addPhoto() initiates
+    // actual uploading to the server which normally takes some time (and may fail).
+    $scope.photos.push(photo);
+    PhotoLibraryService.addPhoto(photo);
+  }
 })
 
 .controller('PhotoCtrl', function($scope, $state, PhotoLibraryService) {
