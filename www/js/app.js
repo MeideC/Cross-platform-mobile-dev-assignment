@@ -3,7 +3,7 @@
 // angular.module is a global place for creating, registering and retrieving Angular modules
 // 'starter' is the name of this angular module example (also set in a <body> attribute in index.html)
 // the 2nd parameter is an array of 'requires'
-angular.module('photoApp', ['ionic'])
+angular.module('photoApp', ['ionic', 'photoApp.services'])
 
 .run(function($ionicPlatform) {
   $ionicPlatform.ready(function() {
@@ -38,15 +38,15 @@ angular.module('photoApp', ['ionic'])
   });
 })
 
-.controller('PhotosCtrl', function ($scope, $http) {
-  $http.get('data/photos.json').success(function (data) {
-    $scope.photos = data;
+.controller('PhotosCtrl', function ($scope, PhotoLibraryService) {
+  PhotoLibraryService.getPhotos().then(function(photos) {
+      $scope.photos = photos;
   });
 })
 
-.controller('PhotoCtrl', function($scope, $http, $filter, $stateParams) {
-  var photoid = $stateParams.photoid;
-  $http.get('data/photos.json').success(function (data) {
-    $scope.photo = $filter('filter')(data, { id: photoid })[0];
+.controller('PhotoCtrl', function($scope, $stateParams, PhotoLibraryService) {
+  var photoId = $stateParams.photoid;
+  PhotoLibraryService.getPhoto(photoId).then(function(photo) {
+    $scope.photo = photo;
   });
 });
