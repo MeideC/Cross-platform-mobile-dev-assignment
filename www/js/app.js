@@ -39,14 +39,29 @@ angular.module('photoApp', ['ionic', 'photoApp.services'])
 })
 
 .controller('PhotosCtrl', function ($scope, PhotoLibraryService) {
-  PhotoLibraryService.getPhotos().then(function(photos) {
+  $scope.$on('$ionicView.beforeEnter', function beforeEnter() {
+    // Ionic caches views and this controller will not be recreated upon
+    // state re-entry. That means, the code in the outer function will not
+    // be executed when re-entering this state after deleting a photo.
+    // However, until the list of photos is refreshed from the PhotoLibraryService
+    // we will not see that a photo is deleted.
+    //
+    // That's why it's necessary to subscribe to the '$ionicView.beforeEnter'
+    // event and refresh the list manually.
+    PhotoLibraryService.getPhotos().then(function(photos) {
       $scope.photos = photos;
+    });
   });
 })
 
-.controller('PhotoCtrl', function($scope, $stateParams, PhotoLibraryService) {
-  var photoId = $stateParams.photoid;
+.controller('PhotoCtrl', function($scope, $state, PhotoLibraryService) {
+  var photoId = $state.params.photoid;
   PhotoLibraryService.getPhoto(photoId).then(function(photo) {
     $scope.photo = photo;
   });
+
+  $scope.deletePhoto = function() {
+    PhotoLibraryService.deletePhoto(photoId);
+    $state.go('photos');
+  }
 });
