@@ -3,7 +3,8 @@
 // angular.module is a global place for creating, registering and retrieving Angular modules
 // 'starter' is the name of this angular module example (also set in a <body> attribute in index.html)
 // the 2nd parameter is an array of 'requires'
-angular.module('photoApp', ['ionic', 'photoApp.services'])
+// 'ngCordova' is needed for utilizing camera functionality. Don't forget to define it in bower.json and index.html
+angular.module('photoApp', ['ionic', 'photoApp.services', 'ngCordova'])
 
 .run(function($ionicPlatform) {
   $ionicPlatform.ready(function() {
@@ -38,7 +39,8 @@ angular.module('photoApp', ['ionic', 'photoApp.services'])
   });
 })
 
-.controller('PhotosCtrl', function ($scope, PhotoLibraryService) {
+  // inject cordova camera plugin
+.controller('PhotosCtrl', function ($scope, $cordovaCamera, PhotoLibraryService) {
   $scope.$on('$ionicView.beforeEnter', function beforeEnter() {
     // Ionic caches views and this controller will not be recreated upon
     // state re-entry. That means, the code in the outer function will not
@@ -55,10 +57,28 @@ angular.module('photoApp', ['ionic', 'photoApp.services'])
     });
   });
 
-  $scope.takePhoto = function() {
-    // for now always upload the same photo from a local file
-    // we'll add photos from the actual camera later
-    uploadNewPhoto('img/ionic.png');
+  $scope.takePhoto = function () {
+
+    // define options for $cordovaCamera plugin
+    var options = {
+      quality: 75,
+      destinationType: Camera.DestinationType.DATA_URL,
+      sourceType: Camera.PictureSourceType.CAMERA,
+      allowEdit: true,
+      encodingType: Camera.EncodingType.JPEG,
+      targetWidth: 300,
+      targetHeight: 300,
+      popoverOptions: CameraPopoverOptions,
+      saveToPhotoAlbum: false
+    };
+
+    // if photo is successfully made, then save its URI
+    $cordovaCamera.getPicture(options).then(function (imageData) {
+      $scope.imgURI = "data:image/jpeg;base64," + imageData;
+      uploadNewPhoto($scope.imgURI);
+    }, function (err) {
+      // An error occured. Show a message to the user
+    });
   };
 
   function uploadNewPhoto(url) {
