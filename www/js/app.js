@@ -4,7 +4,7 @@
 // 'starter' is the name of this angular module example (also set in a <body> attribute in index.html)
 // the 2nd parameter is an array of 'requires'
 // 'ngCordova' is needed for utilizing camera functionality. Don't forget to define it in bower.json and index.html
-angular.module('photoApp', ['ionic', 'photoApp.services', 'ngCordova'])
+angular.module('photoApp', ['ionic', 'photoApp.services', 'ngCordova', 'ngCordovaMocks'])
 
 .run(function($ionicPlatform) {
   $ionicPlatform.ready(function() {
@@ -22,6 +22,10 @@ angular.module('photoApp', ['ionic', 'photoApp.services', 'ngCordova'])
       StatusBar.styleDefault();
     }
   });
+})
+
+.run(function ($cordovaCamera) {
+  $cordovaCamera.imageData = 'img/ionic.png';
 })
 
 .config(function($stateProvider, $urlRouterProvider) {
@@ -62,20 +66,19 @@ angular.module('photoApp', ['ionic', 'photoApp.services', 'ngCordova'])
     // define options for $cordovaCamera plugin
     var options = {
       quality: 75,
-      destinationType: Camera.DestinationType.DATA_URL,
+      destinationType: 0,
+    //  destinationType: Camera.DestinationType.FILE_URI,
       sourceType: Camera.PictureSourceType.CAMERA,
       allowEdit: true,
       encodingType: Camera.EncodingType.JPEG,
       targetWidth: 300,
       targetHeight: 300,
-      popoverOptions: CameraPopoverOptions,
       saveToPhotoAlbum: false
     };
 
     // if photo is successfully made, then save its URI
     $cordovaCamera.getPicture(options).then(function (imageData) {
-      $scope.imgURI = "data:image/jpeg;base64," + imageData;
-      uploadNewPhoto($scope.imgURI);
+      uploadNewPhoto(imageData);
     }, function (err) {
       // An error occured. Show a message to the user
     });
