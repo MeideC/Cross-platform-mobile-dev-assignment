@@ -4,81 +4,180 @@ angular.module('photoApp.services', [])
 // PhotoLibraryService is used somewhere in the application for the first time.
 // When this service is used again, the same service object is returned.
 // more info on angular services here: https://docs.angularjs.org/guide/services
-.factory('PhotoLibraryService', function($http) {
-  // a 'promise' object that resolves to an array of photos
-  // more info on promises here: https://docs.angularjs.org/api/ng/service/$q
-  var photosPromise;
+.factory('PhotoLibraryService', function($http, $q) {
+  // Amazon Web Services configuration and API credentials
+  var config = {
+    bucket: 'cpmd-photo-library',
+    website_url: 'http://cpmd-photo-library.s3-website.eu-central-1.amazonaws.com/',
+    awsconfig: {
+      accessKeyId: 'AKIAJSJHNFR5QOGSGVVA',
+      secretAccessKey: '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',
+      region: 'eu-central-1',
+      apiVersions: {
+        s3: '2006-03-01',
+        dynamodb: '2012-08-10'
+      }
+    }
+  };
+  AWS.config.update(config.awsconfig);
+
+  // create API endpoints for S3 and DynamoDB
+  var bucket = new AWS.S3({ params: { Bucket: config.bucket } });
+  var ddb = new AWS.DynamoDB();
 
   // this defines the PhotoLibraryService object
   return {
-    // initializes the photosPromise if necessary and returns it
     getPhotos: function() {
-      if (!photosPromise) {
-        // Angular's $http.get() returns a promise object, which resolves to
-        // an HTTP response upon success. Since we only need the data from the
-        // response, we add an extra .then() step. The result is still a promise,
-        // but such that resolves to an array of photos.
-        photosPromise = $http.get('data/photos.json')
-          .then(function onFulfilled(response) {
-            // this code executes asynchronously after .getPhotos() returns
-            // it defines how the promise returned by .getPhotos() will be resolved
-            return response.data;
-          });
-      }
-      // Note that no errors handling is defined here. It's the responsibility of
-      // the caller to provide an onRejected() error handler
-      return photosPromise;
-    },
-
-    // returns a promise object that resolves to a single photo (or to undefined)
-    getPhoto: function(photoId) {
-      // notice that the return value is a result of .then(), i.e. it is also a promise
-      // more information on the .then() method:
-      // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/then
-      return photosPromise.then(function onFulfilled(photos) {
-        // This code executes asynchronously after .getPhoto() returns.
-        // It defines how the promise returned by .getPhoto() will be resolved.
-        // Note: inside this function 'photos' is the actual array of photos
-        return photos.filter(
-          // Array.filter() returns another array with only the matching elements.
-          // We assume here that photo IDs are unique and so the array of matches will
-          // always have only one element.
-          function isMatching(photo) {
-            return photo.id === photoId;
-          })[0];
-      });
-    },
-
-    // Updates the internal photos promise to resolve to different array of photos
-    // (the new array will contain one more photo).
-    // This method does not return anything.
-    addPhoto: function(newPhoto) {
-      // notice that the return value is a result of .then(), i.e. it is also a promise
-      photosPromise = photosPromise.then(function onFulfilled(photos) {
-        // This code executes asynchronously after .addPhoto() returns.
-        // It defines how the promise returned by .addPhoto() will be resolved.
-        // Note: inside this function 'photos' is the actual array of photos
-        photos.push(newPhoto);
-        return photos;
-      });
-    },
-
-    // Updates the internal photos promise to resolve to different array of photos
-    // (the new array will contain one less photo).
-    // This method does not return anything.
-    deletePhoto: function(photoId) {
-      // notice that the return value is a result of .then(), i.e. it is also a promise
-      photosPromise = photosPromise.then(function onFulfilled(photos) {
-        // This code executes asynchronously after .addPhoto() returns.
-        // It defines how the promise returned by .addPhoto() will be resolved.
-        // Note: inside this function 'photos' is the actual array of photos
-        return photos.filter(
-          // Array.filter() returns another array with only the matching elements.
-          function isMatching(photo) {
-            return photo.id !== photoId;
+      return $q(function(resolve, reject) {
+        var params = { TableName: 'ImageInfo' };
+        ddb.scan(params, function(error, data) {
+          if (error) {
+            console.log('AWS DynamoDB Scan ERROR: ' + error);
+            reject(error);
+          } else {
+            var photos = new Array(data.Count);
+            for (var i = 0; i < data.Count; i += 1) {
+              var imageInfo = data.Items[i];
+              photos[i] = {
+                id: imageInfo.photoid.S.slice(0),
+                url: imageInfo.url.S.slice(0),
+                thumbnail_url: imageInfo.thumbnail_url.S.slice(0),
+                title: imageInfo.title.S.slice(0),
+                date: new Date(imageInfo.created_on.S)
+              };
+            }
+            resolve(photos);
           }
-        );
+        });
       });
+    },
+
+    getPhoto: function(photoId) {
+      return $q(function(resolve, reject) {
+        var params = {
+          TableName: 'ImageInfo',
+          Key: {
+            photoid: { S: photoId }
+          }
+        };
+        ddb.getItem(params, function(error, data) {
+          if (error) {
+            console.log('AWS DynamoDB GetItem ERROR: ' + error);
+            reject(error);
+          } else {
+            var imageInfo = data.Item;
+            resolve({
+              id: imageInfo.photoid.S.slice(0),
+              url: imageInfo.url.S.slice(0),
+              thumbnail_url: imageInfo.thumbnail_url.S.slice(0),
+              title: imageInfo.title.S.slice(0),
+              date: new Date(imageInfo.created_on.S)
+            });
+          }
+        });
+      });
+    },
+
+    addPhoto: function(newPhoto) {
+      return $q(function(resolve, reject) {
+        var params = {
+          Key: newPhoto.id + '.jpg',
+          Body: newPhoto.blob
+        };
+        bucket.putObject(params, function(error, data) {
+          if (error) {
+            console.log("AWS S3 PutObject ERROR: " + error.message);
+            reject(error);
+          } else {
+            console.log("AWS S3 PutObject OK");
+
+            var photo = {
+              id: newPhoto.id,
+              thumbnail_url: config.website_url + newPhoto.id +'.jpg',
+              url: config.website_url + newPhoto.id + '.jpg',
+              title: newPhoto.title,
+              date: newPhoto.date
+            };
+
+            params = {
+              Item: {
+                photoid: { S: photo.id },
+                url: { S: photo.url },
+                thumbnail_url: { S: photo.thumbnail_url },
+                title: { S: photo.title },
+                created_on: { S: photo.date.toISOString() }
+              },
+              TableName: 'ImageInfo'
+            };
+            ddb.putItem(params, function(error, data) {
+              if (error) {
+                console.log("AWS DynamoDB PutItem ERROR: " +
+                  error.message);
+                reject(error);
+              } else {
+                console.log(data);
+                resolve(photo);
+              }
+            });
+          }
+        });
+      });
+    },
+
+    deletePhoto: function(photoid) {
+      return $q(function(resolve, reject) {
+        var params = {
+          TableName: 'ImageInfo',
+          Key: {
+            photoid: { S: photoid }
+          }
+        };
+        ddb.deleteItem(params, function(error, data) {
+          if (error) {
+            console.log('AWS DynamoDB DeleteItem ERROR: ' + error);
+            reject(error);
+          } else {
+            params = { Key: photoid + '.jpg' };
+            bucket.deleteObject(params, function(error, data) {
+              if (error) {
+                console.log("AWS DynamoDB DeleteItem ERROR: " +
+                  error.message);
+              } else {
+                console.log("AWS DynamoDB DeleteItem OK");
+              }
+            });
+            resolve();
+          }
+        });
+      });
+    },
+
+    newPhoto: function() {
+      var date = new Date(); // now
+
+      // do some formatting to make an OK default name for the new photo
+      // 2011-10-05T14:48:00.000Z -> 2011.10.05 at 14.48.00
+      var title = date.toISOString();
+      title = title.slice(0, 10).replace(/\-/g, ".") + ' at '
+        + title.slice(11, 19).replace(/:/g, ".");
+
+      // generate a unique ID
+      var id = '';
+      var length = 8;
+      var alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' +
+        'abcdefghijklmnopqrstuvwxyz' +
+        '0123456789';
+
+      for (var i = 0; i < length; i += 1) {
+        var random = date.getTime() + Math.random() * alphabet.length;
+        id += alphabet.charAt(random % alphabet.length);
+      }
+
+      return {
+        id: id,
+        title: title,
+        date: date
+      };
     }
   };
 });
