@@ -3,6 +3,26 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width">
+    <meta http-equiv="Content-Security-Policy" content="
+             default-src  'self' 'unsafe-eval' 'unsafe-inline'
+                           127.0.0.1:*
+                           localhost:*
+                           data:
+                           gap:
+                           http://cpmd-photo-library.s3-website.eu-central-1.amazonaws.com
+                           https://cpmd-photo-library.s3.eu-central-1.amazonaws.com
+                           ;
+              style-src   'self' 'unsafe-inline'
+                           ;
+              connect-src 'self' 'unsafe-eval' 'unsafe-inline'
+                           ws://127.0.0.1:*
+                           ws://localhost:*
+                           http://cpmd-photo-library.s3-website.eu-central-1.amazonaws.com
+                           https://cpmd-photo-library.s3.eu-central-1.amazonaws.com
+                           https://dynamodb.eu-central-1.amazonaws.com
+                           ;
+              media-src    *
+    ">
     <title></title>
 
     <link href="lib/ionic/css/ionic.css" rel="stylesheet">
