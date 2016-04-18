@@ -1,5 +1,10 @@
 <ion-view title="Photo Library">
   <ion-content class="has-header">
+    <ion-refresher
+      pulling-text="Pull to refresh..."
+      on-refresh="refreshPhotoList()">
+    </ion-refresher>
+
     <ion-list>
       <ion-item class="item item-thumbnail-left" ng-repeat="photo in photos" ui-sref="photo({ photoid: photo.id })">
         <img ng-src="{{ photo.thumbnail_url }}">

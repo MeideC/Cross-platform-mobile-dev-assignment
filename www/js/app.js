@@ -60,8 +60,21 @@ angular.module('photoApp', ['ionic', 'photoApp.services', 'ngCordova', 'ngCordov
 })
 
   // inject cordova camera plugin
-.controller('PhotosCtrl',
-  function ($scope, $cordovaCamera, PhotoLibraryService, ImageService) {
+.controller('PhotosCtrl', function ($scope, $cordovaCamera, PhotoLibraryService, ImageService) {
+  $scope.refreshPhotoList = function() {
+    PhotoLibraryService.getPhotos()
+      .then(function onSuccess(photos) {
+        $scope.photos = photos.slice(0);
+      })
+      .catch(function onError(error) {
+        console.log("PhotoLibrary.getPhotos() ERROR: " + error.message);
+      })
+      .finally(function() {
+        // Stop the ion-refresher from spinning
+        $scope.$broadcast('scroll.refreshComplete');
+      });
+  };
+
   $scope.$on('$ionicView.beforeEnter', function beforeEnter() {
     // Ionic caches views and this controller will not be recreated upon
     // state re-entry. That means, the code in the outer function will not
@@ -71,11 +84,7 @@ angular.module('photoApp', ['ionic', 'photoApp.services', 'ngCordova', 'ngCordov
     //
     // That's why it's necessary to subscribe to the '$ionicView.beforeEnter'
     // event and refresh the list manually.
-    PhotoLibraryService.getPhotos().then(function(photos) {
-      // keep a copy of the array (to be able to modify it as needed
-      // without affecting others)
-      $scope.photos = photos.slice(0);
-    });
+    $scope.refreshPhotoList();
   });
 
   $scope.takePhoto = function () {
