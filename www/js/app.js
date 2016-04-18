@@ -66,11 +66,13 @@ angular.module('photoApp', ['ionic', 'photoApp.services', 'ngCordova', 'ngCordov
     // define options for $cordovaCamera plugin
     var options = {
       quality: 75,
+      // destinationType: Camera.DestinationType.FILE_URI,
       destinationType: 0,
-    //  destinationType: Camera.DestinationType.FILE_URI,
-      sourceType: Camera.PictureSourceType.CAMERA,
+      // sourceType: Camera.PictureSourceType.CAMERA,
+      sourceType: 1,
       allowEdit: true,
-      encodingType: Camera.EncodingType.JPEG,
+      // encodingType: Camera.EncodingType.JPEG,
+      encodingType: 0,
       targetWidth: 300,
       targetHeight: 300,
       saveToPhotoAlbum: false
