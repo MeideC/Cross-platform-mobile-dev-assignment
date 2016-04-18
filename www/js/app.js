@@ -44,7 +44,8 @@ angular.module('photoApp', ['ionic', 'photoApp.services', 'ngCordova', 'ngCordov
 })
 
   // inject cordova camera plugin
-.controller('PhotosCtrl', function ($scope, $cordovaCamera, PhotoLibraryService) {
+.controller('PhotosCtrl',
+  function ($scope, $cordovaCamera, PhotoLibraryService, ImageService) {
   $scope.$on('$ionicView.beforeEnter', function beforeEnter() {
     // Ionic caches views and this controller will not be recreated upon
     // state re-entry. That means, the code in the outer function will not
@@ -87,26 +88,24 @@ angular.module('photoApp', ['ionic', 'photoApp.services', 'ngCordova', 'ngCordov
   };
 
   function uploadNewPhoto(url) {
-    var date = new Date(); // now
+    var newPhoto = PhotoLibraryService.newPhoto();
+    newPhoto.url = url;
+    newPhoto.thumbnail_url = url;
 
-    // do some formatting to make an OK default name for the new photo
-    // 2011-10-05T14:48:00.000Z -> 2011.10.05 at 14.48.00
-    var title = date.toISOString();
-    title = title.slice(0, 10).replace(/\-/g, ".") + ' at '
-      + title.slice(11, 19).replace(/:/g, ".");
-
-    var photo = {
-      id: date.getTime().toString(), // time with milliseconds should be unique enough
-      title: title,
-      date: date,
-      thumbnail_url: url
-    };
-
-    // Adding the new photo object to the $scope makes it immediately visible
-    // on the screen. Calling the PhotoLibraryService.addPhoto() initiates
-    // actual uploading to the server which normally takes some time (and may fail).
-    $scope.photos.push(photo);
-    PhotoLibraryService.addPhoto(photo);
+    $scope.photos.push(newPhoto);
+    ImageService.getBlobFromImageUrl(url, 750)
+      .then(function onSuccess(blob) {
+        newPhoto.blob = blob;
+        return PhotoLibraryService.addPhoto(newPhoto);
+      })
+      .then(function onSuccess(photo) {
+        console.log("PhotoLibrary.addPhoto() OK: url = " + photo.url);
+        newPhoto.url = photo.url;
+        newPhoto.thumbnail_url = photo.thumbnail_url;
+        delete newPhoto.blob;
+      }, function onError(error) {
+        console.log("PhotoLibrary.addPhoto() ERROR: " + error.message);
+      });
   }
 })
 

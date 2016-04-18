@@ -180,4 +180,43 @@ angular.module('photoApp.services', [])
       };
     }
   };
+})
+
+.factory('ImageService', function($q) {
+  return {
+    getBlobFromImageUrl: function(url, size) {
+      return $q(function(resolve, reject) {
+        // load the image into the browser
+        var image = new Image();
+        image.src = url;
+        image.onload = function () {
+          // do the math
+          var naturalSize = Math.max(image.naturalHeight,
+            image.naturalWidth),
+            ratio = size / naturalSize,
+            height = Math.round(image.naturalHeight * ratio),
+            width = Math.round(image.naturalWidth * ratio);
+
+          // create an off-screen canvas
+          var canvas = document.createElement('canvas'),
+            ctx = canvas.getContext('2d');
+
+          // set its dimension to target size
+          canvas.width = width;
+          canvas.height = height;
+
+          // draw source image into the off-screen canvas
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(image, 0, 0, width, height);
+
+          // get binary representation of the picture in the new
+          // size (jpeg-encoded)
+          canvas.toBlob(function onSuccess(blob) {
+            resolve(blob);
+          }, 'image/jpeg', 0.75);
+        };
+      });
+    }
+  };
 });
