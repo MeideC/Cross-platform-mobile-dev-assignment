@@ -4,7 +4,7 @@
 // 'starter' is the name of this angular module example (also set in a <body> attribute in index.html)
 // the 2nd parameter is an array of 'requires'
 // 'ngCordova' is needed for utilizing camera functionality. Don't forget to define it in bower.json and index.html
-angular.module('photoApp', ['ionic', 'photoApp.services', 'ngCordova', 'ngCordovaMocks'])
+angular.module('photoApp', ['ionic', 'photoApp.services', 'ngCordovaMocks'])
 
 .run(function($ionicPlatform) {
   $ionicPlatform.ready(function() {
@@ -92,15 +92,12 @@ angular.module('photoApp', ['ionic', 'photoApp.services', 'ngCordova', 'ngCordov
     // define options for $cordovaCamera plugin
     var options = {
       quality: 75,
-      // destinationType: Camera.DestinationType.FILE_URI,
-      destinationType: 0,
-      // sourceType: Camera.PictureSourceType.CAMERA,
-      sourceType: 1,
+      destinationType: 0,//Camera.DestinationType.FILE_URI,
+      sourceType: 1,//Camera.PictureSourceType.CAMERA,
       allowEdit: true,
-      // encodingType: Camera.EncodingType.JPEG,
-      encodingType: 0,
-      targetWidth: 300,
-      targetHeight: 300,
+      encodingType: 0,//Camera.EncodingType.JPEG,
+      targetWidth: 750,
+      targetHeight: 750,
       saveToPhotoAlbum: false
     };
 
@@ -116,6 +113,7 @@ angular.module('photoApp', ['ionic', 'photoApp.services', 'ngCordova', 'ngCordov
     var newPhoto = PhotoLibraryService.newPhoto();
     newPhoto.url = url;
     newPhoto.thumbnail_url = url;
+    newPhoto.progress = 0;
 
     $scope.photos.push(newPhoto);
     ImageService.getBlobFromImageUrl(url, 750)
@@ -128,8 +126,14 @@ angular.module('photoApp', ['ionic', 'photoApp.services', 'ngCordova', 'ngCordov
         newPhoto.url = photo.url;
         newPhoto.thumbnail_url = photo.thumbnail_url;
         delete newPhoto.blob;
+        delete newPhoto.progress;
+        delete newPhoto.error;
       }, function onError(error) {
+        newPhoto.error = error.message;
         console.log("PhotoLibrary.addPhoto() ERROR: " + error.message);
+      }, function onNotify(progress) {
+        newPhoto.progress = Math.round(progress.loaded / progress.total * 100);
+        console.log("PhotoLibrary.addPhoto() " + newPhoto.progress + "% done");
       });
   }
 })

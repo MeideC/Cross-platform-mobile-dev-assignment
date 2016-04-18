@@ -71,49 +71,55 @@ angular.module('photoApp.services', [])
       },
 
       addPhoto: function(newPhoto) {
-        return $q(function(resolve, reject) {
-          var params = {
-            Key: newPhoto.id + '.jpg',
-            Body: newPhoto.blob
-          };
-          bucket.putObject(params, function(error, data) {
-            if (error) {
-              console.log("AWS S3 PutObject ERROR: " + error.message);
-              reject(error);
-            } else {
-              console.log("AWS S3 PutObject OK");
+        var deferred = $q.defer();
+        var params = {
+          Key: newPhoto.id + '.jpg',
+          Body: newPhoto.blob
+        };
+        bucket.putObject(params, function(error, data) {
+          if (error) {
+            console.log("AWS S3 PutObject ERROR: " + error.message);
+            deferred.reject(error);
+          } else {
+            console.log("AWS S3 PutObject OK");
 
-              var photo = {
-                id: newPhoto.id,
-                thumbnail_url: config.website_url + newPhoto.id +'.jpg',
-                url: config.website_url + newPhoto.id + '.jpg',
-                title: newPhoto.title,
-                date: newPhoto.date
-              };
+            var photo = {
+              id: newPhoto.id,
+              thumbnail_url: config.website_url + newPhoto.id +'.jpg',
+              url: config.website_url + newPhoto.id + '.jpg',
+              title: newPhoto.title,
+              date: newPhoto.date
+            };
 
-              params = {
-                Item: {
-                  photoid: { S: photo.id },
-                  url: { S: photo.url },
-                  thumbnail_url: { S: photo.thumbnail_url },
-                  title: { S: photo.title },
-                  created_on: { S: photo.date.toISOString() }
-                },
-                TableName: 'ImageInfo'
-              };
-              ddb.putItem(params, function(error, data) {
-                if (error) {
-                  console.log("AWS DynamoDB PutItem ERROR: " +
-                    error.message);
-                  reject(error);
-                } else {
-                  console.log(data);
-                  resolve(photo);
-                }
-              });
-            }
-          });
+            params = {
+              Item: {
+                photoid: { S: photo.id },
+                url: { S: photo.url },
+                thumbnail_url: { S: photo.thumbnail_url },
+                title: { S: photo.title },
+                created_on: { S: photo.date.toISOString() }
+              },
+              TableName: 'ImageInfo'
+            };
+            ddb.putItem(params, function(error, data) {
+              if (error) {
+                console.log("AWS DynamoDB PutItem ERROR: " +
+                  error.message);
+                deferred.reject(error);
+              } else {
+                console.log(data);
+                deferred.resolve(photo);
+              }
+            });
+          }
+        })
+        .on('httpUploadProgress', function(progress) {
+          var percent = Math.round(progress.loaded / progress.total * 100);
+          console.log("AWS S3 PutObject " + percent + "% done");
+          deferred.notify(progress);
         });
+        
+        return deferred.promise;
       },
 
       deletePhoto: function(photoid) {
