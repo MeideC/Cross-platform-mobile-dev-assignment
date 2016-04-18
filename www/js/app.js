@@ -28,7 +28,8 @@ angular.module('photoApp', ['ionic', 'photoApp.services', 'ngCordova', 'ngCordov
   $cordovaCamera.imageData = 'img/ionic.png';
 })
 
-.config(function($stateProvider, $urlRouterProvider) {
+.config(function($stateProvider, $urlRouterProvider,
+                 PhotoLibraryServiceProvider) {
   $urlRouterProvider.otherwise('/');
 
   $stateProvider.state('photos', {
@@ -41,6 +42,21 @@ angular.module('photoApp', ['ionic', 'photoApp.services', 'ngCordova', 'ngCordov
     templateUrl: 'templates/photo.html',
     controller: 'PhotoCtrl'
   });
+
+  var config = {
+    bucket: 'cpmd-photo-library',
+    website_url: 'http://cpmd-photo-library.s3-website.eu-central-1.amazonaws.com/',
+    awsconfig: {
+      accessKeyId: 'AKIAJSJHNFR5QOGSGVVA',
+      secretAccessKey: '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',
+      region: 'eu-central-1',
+      apiVersions: {
+        s3: '2006-03-01',
+        dynamodb: '2012-08-10'
+      }
+    }
+  };
+  PhotoLibraryServiceProvider.setConfig(config);
 })
 
   // inject cordova camera plugin

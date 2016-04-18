@@ -4,182 +4,175 @@ angular.module('photoApp.services', [])
 // PhotoLibraryService is used somewhere in the application for the first time.
 // When this service is used again, the same service object is returned.
 // more info on angular services here: https://docs.angularjs.org/guide/services
-.factory('PhotoLibraryService', function($http, $q) {
-  // Amazon Web Services configuration and API credentials
-  var config = {
-    bucket: 'cpmd-photo-library',
-    website_url: 'http://cpmd-photo-library.s3-website.eu-central-1.amazonaws.com/',
-    awsconfig: {
-      accessKeyId: 'AKIAJSJHNFR5QOGSGVVA',
-      secretAccessKey: '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',
-      region: 'eu-central-1',
-      apiVersions: {
-        s3: '2006-03-01',
-        dynamodb: '2012-08-10'
-      }
-    }
+.provider('PhotoLibraryService', function PhotoLibraryProvider() {
+  var config;
+  this.setConfig = function(newConfig) {
+    config = newConfig;
   };
-  AWS.config.update(config.awsconfig);
 
-  // create API endpoints for S3 and DynamoDB
-  var bucket = new AWS.S3({ params: { Bucket: config.bucket } });
-  var ddb = new AWS.DynamoDB();
+  this.$get = ['$q', function($q) {
+    AWS.config.update(config.awsconfig);
 
-  // this defines the PhotoLibraryService object
-  return {
-    getPhotos: function() {
-      return $q(function(resolve, reject) {
-        var params = { TableName: 'ImageInfo' };
-        ddb.scan(params, function(error, data) {
-          if (error) {
-            console.log('AWS DynamoDB Scan ERROR: ' + error);
-            reject(error);
-          } else {
-            var photos = new Array(data.Count);
-            for (var i = 0; i < data.Count; i += 1) {
-              var imageInfo = data.Items[i];
-              photos[i] = {
+    // create API endpoints for S3 and DynamoDB
+    var bucket = new AWS.S3({ params: { Bucket: config.bucket } });
+    var ddb = new AWS.DynamoDB();
+
+    // this defines the PhotoLibraryService object
+    return {
+      getPhotos: function() {
+        return $q(function(resolve, reject) {
+          var params = { TableName: 'ImageInfo' };
+          ddb.scan(params, function(error, data) {
+            if (error) {
+              console.log('AWS DynamoDB Scan ERROR: ' + error);
+              reject(error);
+            } else {
+              var photos = new Array(data.Count);
+              for (var i = 0; i < data.Count; i += 1) {
+                var imageInfo = data.Items[i];
+                photos[i] = {
+                  id: imageInfo.photoid.S.slice(0),
+                  url: imageInfo.url.S.slice(0),
+                  thumbnail_url: imageInfo.thumbnail_url.S.slice(0),
+                  title: imageInfo.title.S.slice(0),
+                  date: new Date(imageInfo.created_on.S)
+                };
+              }
+              resolve(photos);
+            }
+          });
+        });
+      },
+
+      getPhoto: function(photoId) {
+        return $q(function(resolve, reject) {
+          var params = {
+            TableName: 'ImageInfo',
+            Key: {
+              photoid: { S: photoId }
+            }
+          };
+          ddb.getItem(params, function(error, data) {
+            if (error) {
+              console.log('AWS DynamoDB GetItem ERROR: ' + error);
+              reject(error);
+            } else {
+              var imageInfo = data.Item;
+              resolve({
                 id: imageInfo.photoid.S.slice(0),
                 url: imageInfo.url.S.slice(0),
                 thumbnail_url: imageInfo.thumbnail_url.S.slice(0),
                 title: imageInfo.title.S.slice(0),
                 date: new Date(imageInfo.created_on.S)
-              };
+              });
             }
-            resolve(photos);
-          }
+          });
         });
-      });
-    },
+      },
 
-    getPhoto: function(photoId) {
-      return $q(function(resolve, reject) {
-        var params = {
-          TableName: 'ImageInfo',
-          Key: {
-            photoid: { S: photoId }
-          }
+      addPhoto: function(newPhoto) {
+        return $q(function(resolve, reject) {
+          var params = {
+            Key: newPhoto.id + '.jpg',
+            Body: newPhoto.blob
+          };
+          bucket.putObject(params, function(error, data) {
+            if (error) {
+              console.log("AWS S3 PutObject ERROR: " + error.message);
+              reject(error);
+            } else {
+              console.log("AWS S3 PutObject OK");
+
+              var photo = {
+                id: newPhoto.id,
+                thumbnail_url: config.website_url + newPhoto.id +'.jpg',
+                url: config.website_url + newPhoto.id + '.jpg',
+                title: newPhoto.title,
+                date: newPhoto.date
+              };
+
+              params = {
+                Item: {
+                  photoid: { S: photo.id },
+                  url: { S: photo.url },
+                  thumbnail_url: { S: photo.thumbnail_url },
+                  title: { S: photo.title },
+                  created_on: { S: photo.date.toISOString() }
+                },
+                TableName: 'ImageInfo'
+              };
+              ddb.putItem(params, function(error, data) {
+                if (error) {
+                  console.log("AWS DynamoDB PutItem ERROR: " +
+                    error.message);
+                  reject(error);
+                } else {
+                  console.log(data);
+                  resolve(photo);
+                }
+              });
+            }
+          });
+        });
+      },
+
+      deletePhoto: function(photoid) {
+        return $q(function(resolve, reject) {
+          var params = {
+            TableName: 'ImageInfo',
+            Key: {
+              photoid: { S: photoid }
+            }
+          };
+          ddb.deleteItem(params, function(error, data) {
+            if (error) {
+              console.log('AWS DynamoDB DeleteItem ERROR: ' + error);
+              reject(error);
+            } else {
+              params = { Key: photoid + '.jpg' };
+              bucket.deleteObject(params, function(error, data) {
+                if (error) {
+                  console.log("AWS DynamoDB DeleteItem ERROR: " +
+                    error.message);
+                } else {
+                  console.log("AWS DynamoDB DeleteItem OK");
+                }
+              });
+              resolve();
+            }
+          });
+        });
+      },
+
+      newPhoto: function() {
+        var date = new Date(); // now
+
+        // do some formatting to make an OK default name for the new photo
+        // 2011-10-05T14:48:00.000Z -> 2011.10.05 at 14.48.00
+        var title = date.toISOString();
+        title = title.slice(0, 10).replace(/\-/g, ".") + ' at '
+          + title.slice(11, 19).replace(/:/g, ".");
+
+        // generate a unique ID
+        var id = '';
+        var length = 8;
+        var alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' +
+          'abcdefghijklmnopqrstuvwxyz' +
+          '0123456789';
+
+        for (var i = 0; i < length; i += 1) {
+          var random = date.getTime() + Math.random() * alphabet.length;
+          id += alphabet.charAt(random % alphabet.length);
+        }
+
+        return {
+          id: id,
+          title: title,
+          date: date
         };
-        ddb.getItem(params, function(error, data) {
-          if (error) {
-            console.log('AWS DynamoDB GetItem ERROR: ' + error);
-            reject(error);
-          } else {
-            var imageInfo = data.Item;
-            resolve({
-              id: imageInfo.photoid.S.slice(0),
-              url: imageInfo.url.S.slice(0),
-              thumbnail_url: imageInfo.thumbnail_url.S.slice(0),
-              title: imageInfo.title.S.slice(0),
-              date: new Date(imageInfo.created_on.S)
-            });
-          }
-        });
-      });
-    },
-
-    addPhoto: function(newPhoto) {
-      return $q(function(resolve, reject) {
-        var params = {
-          Key: newPhoto.id + '.jpg',
-          Body: newPhoto.blob
-        };
-        bucket.putObject(params, function(error, data) {
-          if (error) {
-            console.log("AWS S3 PutObject ERROR: " + error.message);
-            reject(error);
-          } else {
-            console.log("AWS S3 PutObject OK");
-
-            var photo = {
-              id: newPhoto.id,
-              thumbnail_url: config.website_url + newPhoto.id +'.jpg',
-              url: config.website_url + newPhoto.id + '.jpg',
-              title: newPhoto.title,
-              date: newPhoto.date
-            };
-
-            params = {
-              Item: {
-                photoid: { S: photo.id },
-                url: { S: photo.url },
-                thumbnail_url: { S: photo.thumbnail_url },
-                title: { S: photo.title },
-                created_on: { S: photo.date.toISOString() }
-              },
-              TableName: 'ImageInfo'
-            };
-            ddb.putItem(params, function(error, data) {
-              if (error) {
-                console.log("AWS DynamoDB PutItem ERROR: " +
-                  error.message);
-                reject(error);
-              } else {
-                console.log(data);
-                resolve(photo);
-              }
-            });
-          }
-        });
-      });
-    },
-
-    deletePhoto: function(photoid) {
-      return $q(function(resolve, reject) {
-        var params = {
-          TableName: 'ImageInfo',
-          Key: {
-            photoid: { S: photoid }
-          }
-        };
-        ddb.deleteItem(params, function(error, data) {
-          if (error) {
-            console.log('AWS DynamoDB DeleteItem ERROR: ' + error);
-            reject(error);
-          } else {
-            params = { Key: photoid + '.jpg' };
-            bucket.deleteObject(params, function(error, data) {
-              if (error) {
-                console.log("AWS DynamoDB DeleteItem ERROR: " +
-                  error.message);
-              } else {
-                console.log("AWS DynamoDB DeleteItem OK");
-              }
-            });
-            resolve();
-          }
-        });
-      });
-    },
-
-    newPhoto: function() {
-      var date = new Date(); // now
-
-      // do some formatting to make an OK default name for the new photo
-      // 2011-10-05T14:48:00.000Z -> 2011.10.05 at 14.48.00
-      var title = date.toISOString();
-      title = title.slice(0, 10).replace(/\-/g, ".") + ' at '
-        + title.slice(11, 19).replace(/:/g, ".");
-
-      // generate a unique ID
-      var id = '';
-      var length = 8;
-      var alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' +
-        'abcdefghijklmnopqrstuvwxyz' +
-        '0123456789';
-
-      for (var i = 0; i < length; i += 1) {
-        var random = date.getTime() + Math.random() * alphabet.length;
-        id += alphabet.charAt(random % alphabet.length);
       }
-
-      return {
-        id: id,
-        title: title,
-        date: date
-      };
-    }
-  };
+    };
+  }];
 })
 
 .factory('ImageService', function($q) {
