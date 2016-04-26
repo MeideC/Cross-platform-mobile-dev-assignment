@@ -1,1 +1,0 @@
-# Cross-platform-mobile-dev-assignment
