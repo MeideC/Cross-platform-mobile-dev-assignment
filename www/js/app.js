@@ -41,6 +41,11 @@ angular.module('photoApp', ['ionic', 'photoApp.services', 'ngCordovaMocks'])
     url: '/photo/:photoid',
     templateUrl: 'templates/photo.html',
     controller: 'PhotoCtrl'
+  })
+  .state('fullscreenphoto', {
+    url: '/photo/:photoid',
+    templateUrl: 'templates/fullscreenphoto.html',
+    controller: 'FullScreenPhotoCtrl'
   });
 
   var config = {
@@ -147,5 +152,31 @@ angular.module('photoApp', ['ionic', 'photoApp.services', 'ngCordovaMocks'])
   $scope.deletePhoto = function() {
     PhotoLibraryService.deletePhoto(photoId);
     $state.go('photos');
+  }
+})
+
+.controller('FullScreenPhotoCtrl', function($scope, $state, PhotoLibraryService, $ionicSlideBoxDelegate) {
+  var photoId = $state.params.photoid;
+  PhotoLibraryService.getPhotos()
+    .then(function onSuccess(photos) {
+      $scope.photos = photos.slice(0);
+      console.log("scopephotos: "+ $scope.photos);
+
+      for (var i = 0; i < $scope.photos.length; i++) {
+        if ($scope.photos[i].id == photoId) {
+          $ionicSlideBoxDelegate.slide(i);
+          console.log("found photoid: "+ i);
+          break;
+        }
+      }
+    })
+    .catch(function onError(error) {
+      console.log("PhotoLibrary.getPhotos() ERROR: " + error.message);
+    });
+
+
+  $scope.slideHasChanged = function(index) {
+    console.log("slide changed");
+    $ionicSlideBoxDelegate.update();
   }
 });
