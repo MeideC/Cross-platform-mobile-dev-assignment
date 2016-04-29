@@ -1,5 +1,7 @@
-<ion-slide-box on-slide-changed="slideHasChanged($index)">
-  <ion-slide ng-repeat="photo in photos">
-    <img src="{{ photo.url }}"/>
-  </ion-slide>
-</ion-slide-box>
+<ion-view class="alphabackground" hide-nav-bar="true">
+  <ion-slide-box on-slide-changed="slideHasChanged($index)" active-slide="firstSlide">
+    <ion-slide ng-repeat="photo in photos">
+      <img ng-src="{{ photo.url }}" ng-click="openModal()"/>
+    </ion-slide>
+  </ion-slide-box>
+</ion-view>

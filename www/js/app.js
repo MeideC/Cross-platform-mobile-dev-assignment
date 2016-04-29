@@ -4,7 +4,9 @@
 // 'starter' is the name of this angular module example (also set in a <body> attribute in index.html)
 // the 2nd parameter is an array of 'requires'
 // 'ngCordova' is needed for utilizing camera functionality. Don't forget to define it in bower.json and index.html
-angular.module('photoApp', ['ionic', 'photoApp.services', 'ngCordovaMocks'])
+var photoList;
+
+angular.module('photoApp', ['ionic', 'photoApp.services', 'ngCordova'])
 
 .run(function($ionicPlatform) {
   $ionicPlatform.ready(function() {
@@ -24,9 +26,11 @@ angular.module('photoApp', ['ionic', 'photoApp.services', 'ngCordovaMocks'])
   });
 })
 
+/*
 .run(function ($cordovaCamera) {
   $cordovaCamera.imageData = 'img/ionic.png';
 })
+*/
 
 .config(function($stateProvider, $urlRouterProvider,
                  PhotoLibraryServiceProvider) {
@@ -70,6 +74,7 @@ angular.module('photoApp', ['ionic', 'photoApp.services', 'ngCordovaMocks'])
     PhotoLibraryService.getPhotos()
       .then(function onSuccess(photos) {
         $scope.photos = photos.slice(0);
+        photoList = photos.slice(0);
       })
       .catch(function onError(error) {
         console.log("PhotoLibrary.getPhotos() ERROR: " + error.message);
@@ -97,10 +102,10 @@ angular.module('photoApp', ['ionic', 'photoApp.services', 'ngCordovaMocks'])
     // define options for $cordovaCamera plugin
     var options = {
       quality: 75,
-      destinationType: 0,//Camera.DestinationType.FILE_URI,
-      sourceType: 1,//Camera.PictureSourceType.CAMERA,
+      destinationType: Camera.DestinationType.FILE_URI,
+      sourceType: Camera.PictureSourceType.CAMERA,
       allowEdit: true,
-      encodingType: 0,//Camera.EncodingType.JPEG,
+      encodingType: Camera.EncodingType.JPEG,
       targetWidth: 750,
       targetHeight: 750,
       saveToPhotoAlbum: false
@@ -152,31 +157,50 @@ angular.module('photoApp', ['ionic', 'photoApp.services', 'ngCordovaMocks'])
   $scope.deletePhoto = function() {
     PhotoLibraryService.deletePhoto(photoId);
     $state.go('photos');
-  }
+  };
 })
 
-.controller('FullScreenPhotoCtrl', function($scope, $state, PhotoLibraryService, $ionicSlideBoxDelegate) {
-  var photoId = $state.params.photoid;
-  PhotoLibraryService.getPhotos()
-    .then(function onSuccess(photos) {
-      $scope.photos = photos.slice(0);
-      console.log("scopephotos: "+ $scope.photos);
+.controller('FullScreenPhotoCtrl', function($scope, $state, $stateParams, PhotoLibraryService, $ionicSlideBoxDelegate, $ionicModal) {
+  var photoId = $stateParams.photoid;
+  $scope.photos = photoList;
+  for (var i = 0; i < photoList.length; i++) {
+    if (photoList[i].id == photoId) {
+      // Choose the right slide to  open based on it's index.
+      $scope.firstSlide = i;
+      break;
+    }
+  }
+  console.log("photosList : " + photoList);
+  //$scope.firstSlide = 3;
+  //console.log("firstslide: " + $scope.firstSlide);
 
-      for (var i = 0; i < $scope.photos.length; i++) {
-        if ($scope.photos[i].id == photoId) {
-          $ionicSlideBoxDelegate.slide(i);
-          console.log("found photoid: "+ i);
-          break;
-        }
-      }
-    })
-    .catch(function onError(error) {
-      console.log("PhotoLibrary.getPhotos() ERROR: " + error.message);
-    });
+  $ionicModal.fromTemplateUrl('templates/fullscreen-modal.html', {
+    scope: $scope,
+    animation: 'slide-in-up'
+  }).then(function(modal) {
+    $scope.modal = modal;
+  });
+
+  $scope.deletePhoto = function() {
+    console.log("deleted photo");
+    PhotoLibraryService.deletePhoto(photoId);
+    $state.go('photos');
+  };
+
+  $scope.openModal = function() {
+    console.log("Opening modal...");
+    $scope.modal.show();
+  };
+
+  $scope.closeModal = function() {
+    console.log("Closing modal.");
+    $scope.modal.hide();
+  };
 
 
   $scope.slideHasChanged = function(index) {
-    console.log("slide changed");
+    console.log("slide changed and the index is: " + index);
+    photoId = $scope.photos[index].id;
     $ionicSlideBoxDelegate.update();
-  }
+  };
 });

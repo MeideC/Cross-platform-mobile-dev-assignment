@@ -3,6 +3,59 @@ div.footer-button button.button.button-full {
   width:100%;
   margin-top: 0
 }
+/*
+#modal-view {
+  width: 80%;
+  heigth: 60%;
+  min-height: 0;
+  max-height: 250px;
+  top: 20%;
+  left: 10%;
+  right: 10%;
+  bottom: 20%;
+}
+*/
+
+.slider {
+  height: 100vh;
+}
+
+.slider-slide {
+
+}
+
+.slider-slide img {
+  position: absolute;
+  width: 100%;
+  margin-top: 15%;
+}
+
+#delete-button {
+  position: absolute;
+  color: white;
+  height: 7%;
+  width: 33%;
+  margin-left: 33%;
+  bottom: 11%;
+  background-color: #ff0066;
+  border-radius: 10px;
+}
+
+#modal-div {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.transparent {
+  background-color: rgba(0,0,0,0);
+}
+
+
+.alphabackground {
+  background-color: rgba(0,0,0,0.95);
+}
+
 
 progress[value] {
   /* Reset the default appearance */
@@ -13,6 +66,7 @@ progress[value] {
   width: 250px;
   height: 20px;
 }
+
 
 progress[value]::-webkit-progress-bar {
   background-color: #eee;

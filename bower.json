@@ -6,7 +6,7 @@
   },
   "dependencies": {
     "ngCordova": "^0.1.26-alpha",
-    "aws-sdk": "^2.3.5",
+    "aws-sdk": "^2.3.7",
     "blueimp-canvas-to-blob": "^3.3.0"
   }
 }
